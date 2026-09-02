@@ -4,8 +4,8 @@ set -e -o pipefail
 echo "=== diy-script: 开始自定义编译配置 ==="
 
 # 修改默认IP
-echo "[diy] 修改默认IP为 192.168.123.1"
-sed -i 's/192.168.6.1/192.168.123.1/g' package/base-files/files/bin/config_generate
+echo "[diy] 修改默认IP为 192.168.2.1"
+sed -i 's/192.168.6.1/192.168.2.1/g' package/base-files/files/bin/config_generate
 sed -i -E 's|^root:[^:]*:|root::|' package/base-files/files/etc/shadow
 
 # 移除要替换的包（来自官方 feeds）
