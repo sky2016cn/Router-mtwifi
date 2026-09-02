@@ -187,7 +187,7 @@ jobs:
         body: |
           **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
           ### 固件信息(${{ env.DEVICE_PROFILE }})
-          - 默认地址: 192.168.123.1
+          - 默认地址: 192.168.2.1
           - 默认密码: 无
           - 固件内核版本：${{ env.VERSION_KERNEL }}
           - 固件源码: ${{ env.REPO_URL }}
