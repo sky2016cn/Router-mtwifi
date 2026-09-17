@@ -88,7 +88,7 @@ jobs:
           echo "Warning: $DTS_MK_TXT or $TARGET_MK does not exist!"
         fi
 
-        # 本地仓库 /scripts/Redmi_AX6000/mt7986a-xiaomi-redmi-router-ax6000-110m.dts 文件，复制到 target/linux/mediatek/dts/ 目录
+        # 复制本地仓库 /scripts/Redmi_AX6000/mt7986a-xiaomi-redmi-router-ax6000-110m.dts 文件到 target/linux/mediatek/dts/ 目录
         DTS_FILE="$GITHUB_WORKSPACE/scripts/Redmi_AX6000/mt7986a-xiaomi-redmi-router-ax6000-110m.dts"
         TARGET_DTS_DIR="$OPENWRT_PATH/target/linux/mediatek/dts"
         if [ -f "$DTS_FILE" ]; then
@@ -114,13 +114,15 @@ jobs:
         # 2. 读取源码目录内的基础配置并覆写到 .config
         if [ -f "$OPENWRT_PATH/$CONFIG_BASE" ]; then
           cat "$OPENWRT_PATH/$CONFIG_BASE" > "$OPENWRT_PATH/.config"
+          echo "Successfully loaded base config."
         else
           echo "Warning: Base config file $OPENWRT_PATH/$CONFIG_BASE not found!"
         fi
 
-        # 3. 读取本地仓库 configs 目录下的自定义配置并追加到 .config
+        # 3. 追加本地仓库的 CUSTOMIZE_AX6000.txt 到 .config
         if [ -f "$GITHUB_WORKSPACE/$CONFIG_CUSTOM" ]; then
           cat "$GITHUB_WORKSPACE/$CONFIG_CUSTOM" >> "$OPENWRT_PATH/.config"
+          echo "Successfully appended custom config."
         else
           echo "Warning: Custom config file $GITHUB_WORKSPACE/$CONFIG_CUSTOM not found!"
         fi
@@ -139,7 +141,7 @@ jobs:
         # 5. 展开补全配置
         cd "$OPENWRT_PATH"
         make defconfig
-
+        
     - name: Generate Variables(生成变量)
       run: |
         cd "$OPENWRT_PATH"
@@ -189,6 +191,12 @@ jobs:
       if: (!cancelled())
       run: df -hT
 
+    - name: Upload artifact (保存整个 bin 目录)
+      uses: actions/upload-artifact@v4
+      with:
+        name: ImmortalWrt ${{ env.FIRMWARE_TAG }} (${{ env.DATE }})
+        path: ${{ env.OPENWRT_PATH }}/bin
+
     - name: Upload Bin Directory(上传bin目录)
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       uses: actions/upload-artifact@v4
@@ -217,14 +225,20 @@ jobs:
         path: ${{ env.FIRMWARE_PATH }}
 
     - name: Upload Firmware To Release(发布固件)
-      if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
+      if: success() && env.FIRMWARE_RELEASE == 'true'
       uses: ncipollo/release-action@v1
       with:
         name: ImmortalWrt ${{ env.FIRMWARE_TAG }} (${{ env.DATE }})
         allowUpdates: true
         tag: ${{ env.FIRMWARE_TAG }}-${{ env.VERSION_KERNEL }}
         token: ${{ secrets.GITHUB_TOKEN }}
-        artifacts: ${{ env.FIRMWARE_PATH }}/*
+        artifacts: |
+          ${{ env.FIRMWARE_PATH }}/*.bin
+          ${{ env.FIRMWARE_PATH }}/*.ubi
+          ${{ env.FIRMWARE_PATH }}/*.manifest
+          ${{ env.FIRMWARE_PATH }}/*.buildinfo
+          ${{ env.FIRMWARE_PATH }}/*.json
+          ${{ env.FIRMWARE_PATH }}/*.tar.gz
         body: |
           **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
           ### 固件信息(${{ env.DEVICE_PROFILE }})
