@@ -24,7 +24,7 @@ env:
   DIY_SCRIPT: scripts/diy-script.sh
   DIY_SCRIPT_2: scripts/diy-6.6.sh
   CACHE_TOOLCHAIN: true
-  UPLOAD_BIN_DIR: false
+  UPLOAD_BIN_DIR: true
   FIRMWARE_RELEASE: true
   FIRMWARE_TAG: Redmi_AX6000
   TZ: Asia/Shanghai
@@ -190,12 +190,6 @@ jobs:
     - name: Check Space Usage(检查空间使用情况)
       if: (!cancelled())
       run: df -hT
-
-    - name: Upload artifact (保存整个 bin 目录)
-      uses: actions/upload-artifact@v4
-      with:
-        name: ImmortalWrt ${{ env.FIRMWARE_TAG }} (${{ env.DATE }})
-        path: ${{ env.OPENWRT_PATH }}/bin
 
     - name: Upload Bin Directory(上传bin目录)
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
