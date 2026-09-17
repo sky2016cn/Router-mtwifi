@@ -74,6 +74,30 @@ jobs:
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
         VERSION_INFO=$(git show -s --date=short --format="作者: %an<br/>时间: %cd<br/>内容: %s<br/>hash: %H")
         echo "VERSION_INFO=$VERSION_INFO" >> $GITHUB_ENV
+
+       # =========== 在更新feeds 命令之前，先修改源码里的 filogic.mk 和 dts 文件 ===========
+    - name: Patch AX6000 110M Partition(修改 110M 大分区文件)
+      run: |
+        # 本地仓库 /scripts/Redmi_AX6000/xiaomi_redmi-router-ax6000-110m.txt 文件内的所有内容，追加 AX6000 110M 补丁内容到 /target/linux/mediatek/image/filogic.mk 末尾
+        DTS_MK_TXT="$GITHUB_WORKSPACE/scripts/Redmi_AX6000/xiaomi_redmi-router-ax6000-110m.txt"
+        TARGET_MK="$OPENWRT_PATH/target/linux/mediatek/image/filogic.mk"
+        if [ -f "$DTS_MK_TXT" ] && [ -f "$TARGET_MK" ]; then
+          cat "$DTS_MK_TXT" >> "$TARGET_MK"
+          echo "Successfully appended AX6000 110M profile to filogic.mk"
+        else
+          echo "Warning: $DTS_MK_TXT or $TARGET_MK does not exist!"
+        fi
+
+        # 本地仓库 /scripts/Redmi_AX6000/mt7986a-xiaomi-redmi-router-ax6000-110m.dts 文件，复制到 target/linux/mediatek/dts/ 目录
+        DTS_FILE="$GITHUB_WORKSPACE/scripts/Redmi_AX6000/mt7986a-xiaomi-redmi-router-ax6000-110m.dts"
+        TARGET_DTS_DIR="$OPENWRT_PATH/target/linux/mediatek/dts"
+        if [ -f "$DTS_FILE" ]; then
+          mkdir -p "$TARGET_DTS_DIR"
+          cp -f "$DTS_FILE" "$TARGET_DTS_DIR/"
+          echo "Successfully copied DTS file to $TARGET_DTS_DIR"
+        else
+          echo "Warning: DTS file $DTS_FILE not found!"
+        fi
         
     - name: Update Feeds(更新feeds)
       run: |
