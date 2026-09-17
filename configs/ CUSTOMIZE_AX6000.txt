@@ -5,8 +5,12 @@
 # ---------------------------------------------------------
 # 我的添加
 # ---------------------------------------------------------
+CONFIG_TARGET_mediatek=y
+CONFIG_TARGET_mediatek_filogic=y
+CONFIG_TARGET_mediatek_filogic_DEVICE_xiaomi_redmi-router-ax6000-110m=y
 CONFIG_PACKAGE_luci-app-autoreboot=y
 CONFIG_PACKAGE_luci-app-openclash=y
+
 # ================= Passwall 主程序 =================
 CONFIG_PACKAGE_luci-app-passwall=y
 # 用于读取和解析大陆 IP/域名数据库（GeoIP / GeoSite）的轻量级工具
