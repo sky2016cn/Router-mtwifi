@@ -2,7 +2,7 @@ name: Clean
 
 on:
   workflow_run:
-    workflows: ["Build-6.6", "Build-6.18"]
+    workflows: ["Build-6.6", "Build-6.18", "Build-6.6_ax6000_immortalwrt_237_golang_msd_lite_110m.yml"]
     types:
       - completed
   workflow_dispatch:
