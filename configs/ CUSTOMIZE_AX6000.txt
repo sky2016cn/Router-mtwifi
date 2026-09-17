@@ -7,6 +7,8 @@
 # ---------------------------------------------------------
 CONFIG_TARGET_mediatek=y
 CONFIG_TARGET_mediatek_filogic=y
+# 显式取消勾选 stock 布局
+# CONFIG_TARGET_mediatek_filogic_DEVICE_xiaomi_redmi-router-ax6000-stock is not set
 CONFIG_TARGET_mediatek_filogic_DEVICE_xiaomi_redmi-router-ax6000-110m=y
 CONFIG_PACKAGE_luci-app-autoreboot=y
 CONFIG_PACKAGE_luci-app-openclash=y
