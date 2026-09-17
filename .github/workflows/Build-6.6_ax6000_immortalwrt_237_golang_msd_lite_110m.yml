@@ -87,7 +87,7 @@ jobs:
         else
           echo "Warning: $DTS_MK_TXT or $TARGET_MK does not exist!"
         fi
-
+        
         # 复制本地仓库 /scripts/Redmi_AX6000/mt7986a-xiaomi-redmi-router-ax6000-110m.dts 文件到 target/linux/mediatek/dts/ 目录
         DTS_FILE="$GITHUB_WORKSPACE/scripts/Redmi_AX6000/mt7986a-xiaomi-redmi-router-ax6000-110m.dts"
         TARGET_DTS_DIR="$OPENWRT_PATH/target/linux/mediatek/dts"
@@ -101,7 +101,7 @@ jobs:
         
     - name: Update Feeds(更新feeds)
       run: |
-        cd $OPENWRT_PATH
+        cd "$OPENWRT_PATH"
         ./scripts/feeds update -a   
         ./scripts/feeds install -a
         ./scripts/feeds install -a
@@ -118,34 +118,35 @@ jobs:
         else
           echo "Warning: Base config file $OPENWRT_PATH/$CONFIG_BASE not found!"
         fi
-
+        
         # 3. 追加本地仓库的 CUSTOMIZE_AX6000.txt 到 .config
-        if [ -f "$GITHUB_WORKSPACE/$CONFIG_CUSTOM" ]; then
-          cat "$GITHUB_WORKSPACE/$CONFIG_CUSTOM" >> "$OPENWRT_PATH/.config"
+        CUSTOM_FILE="$GITHUB_WORKSPACE/${{ env.CONFIG_CUSTOM }}"
+        if [ -f "$CUSTOM_FILE" ]; then
+          cat "$CUSTOM_FILE" >> "$OPENWRT_PATH/.config"
           echo "Successfully appended custom config."
         else
-          echo "Warning: Custom config file $GITHUB_WORKSPACE/$CONFIG_CUSTOM not found!"
+          echo "Warning: Custom config file $CUSTOM_FILE not found!"
         fi
-
+        
         # 4. 执行本地仓库中的 DIY 脚本
-        if [ -f "$GITHUB_WORKSPACE/$DIY_SCRIPT" ]; then
+        cd "$OPENWRT_PATH"
+        if [ -n "$DIY_SCRIPT" ] && [ -f "$GITHUB_WORKSPACE/$DIY_SCRIPT" ]; then
           chmod +x "$GITHUB_WORKSPACE/$DIY_SCRIPT"
-          cd "$OPENWRT_PATH" && "$GITHUB_WORKSPACE/$DIY_SCRIPT"
+          "$GITHUB_WORKSPACE/$DIY_SCRIPT"
         fi
 
-        if [ -f "$GITHUB_WORKSPACE/$DIY_SCRIPT_2" ]; then
+        if [ -n "$DIY_SCRIPT_2" ] && [ -f "$GITHUB_WORKSPACE/$DIY_SCRIPT_2" ]; then
           chmod +x "$GITHUB_WORKSPACE/$DIY_SCRIPT_2"
-          cd "$OPENWRT_PATH" && "$GITHUB_WORKSPACE/$DIY_SCRIPT_2"
+          "$GITHUB_WORKSPACE/$DIY_SCRIPT_2"
         fi
 
         # 5. 展开补全配置
-        cd "$OPENWRT_PATH"
         make defconfig
         
     - name: Generate Variables(生成变量)
       run: |
         cd "$OPENWRT_PATH"
-        SOURCE_REPO="$(echo $REPO_URL | awk -F '/' '{print $(NF)}')"
+        SOURCE_REPO="$(echo "$REPO_URL" | awk -F '/' '{print $(NF)}')"
         SOURCE_REPO="${SOURCE_REPO%.git}"
         echo "SOURCE_REPO=$SOURCE_REPO" >> $GITHUB_ENV
         DEVICE_TARGET=$(grep CONFIG_TARGET_BOARD .config | awk -F '"' '{print $2}')
