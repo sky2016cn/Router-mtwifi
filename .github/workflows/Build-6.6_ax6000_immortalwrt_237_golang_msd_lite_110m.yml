@@ -75,7 +75,7 @@ jobs:
         VERSION_INFO=$(git show -s --date=short --format="作者: %an<br/>时间: %cd<br/>内容: %s<br/>hash: %H")
         echo "VERSION_INFO=$VERSION_INFO" >> $GITHUB_ENV
 
-       # =========== 在更新feeds 命令之前，先修改源码里的 filogic.mk 和 dts 文件 ===========
+       # =========== 在更新feeds 命令之前，先修改源码里的 filogic.mk 文件 和 添加 dts 文件 ===========
     - name: Patch AX6000 110M Partition(修改 110M 大分区文件)
       run: |
         # 本地仓库 /scripts/Redmi_AX6000/xiaomi_redmi-router-ax6000-110m.txt 文件内的所有内容，追加 AX6000 110M 补丁内容到 /target/linux/mediatek/image/filogic.mk 末尾
