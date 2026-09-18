@@ -19,7 +19,7 @@ permissions: write-all
 env:
   REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6.git
   REPO_BRANCH: openwrt-24.10-6.6
-  CONFIG_CUSTOM: configs/CUSTOMIZE-AX6000.txt
+  CONFIG_CUSTOM: scripts/Redmi-AX6000/CUSTOMIZE-AX6000.txt
   DIY_SCRIPT: scripts/diy-script.sh
   DIY_SCRIPT_2: scripts/diy-6.6-redmi-ax6000.sh
   CACHE_TOOLCHAIN: true
