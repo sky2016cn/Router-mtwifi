@@ -21,7 +21,7 @@ env:
   REPO_BRANCH: openwrt-24.10-6.6
   CONFIG_CUSTOM: scripts/Redmi-AX6000/CUSTOMIZE-AX6000.txt
   DIY_SCRIPT: scripts/diy-script.sh
-  DIY_SCRIPT_2: scripts/diy-6.6-redmi-ax6000.sh
+  DIY_SCRIPT_2: scripts/diy-6.6.sh
   CACHE_TOOLCHAIN: true
   UPLOAD_BIN_DIR: true
   FIRMWARE_RELEASE: true
