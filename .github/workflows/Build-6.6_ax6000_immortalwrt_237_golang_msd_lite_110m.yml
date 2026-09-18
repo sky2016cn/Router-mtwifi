@@ -78,8 +78,8 @@ jobs:
        # =========== 在更新feeds 命令之前，先修改源码里的 filogic.mk 文件 和 添加 dts 文件 ===========
     - name: Patch AX6000 110M Partition(修改 110M 大分区文件)
       run: |
-        # 本地仓库 /scripts/Redmi_AX6000/xiaomi_redmi-router-ax6000-110m.txt 文件内的所有内容，追加 AX6000 110M 补丁内容到 /target/linux/mediatek/image/filogic.mk 末尾
-        DTS_MK_TXT="$GITHUB_WORKSPACE/scripts/Redmi_AX6000/xiaomi_redmi-router-ax6000-110m.txt"
+        # 本地仓库 /scripts/xiaomi_redmi-router-ax6000-110m.txt 文件内的所有内容，追加 AX6000 110M 补丁内容到 /target/linux/mediatek/image/filogic.mk 末尾
+        DTS_MK_TXT="$GITHUB_WORKSPACE/scripts/xiaomi_redmi-router-ax6000-110m.txt"
         TARGET_MK="$OPENWRT_PATH/target/linux/mediatek/image/filogic.mk"
         if [ -f "$DTS_MK_TXT" ] && [ -f "$TARGET_MK" ]; then
           cat "$DTS_MK_TXT" >> "$TARGET_MK"
@@ -88,8 +88,8 @@ jobs:
           echo "Warning: $DTS_MK_TXT or $TARGET_MK does not exist!"
         fi
         
-        # 复制本地仓库 /scripts/Redmi_AX6000/mt7986a-xiaomi-redmi-router-ax6000-110m.dts 文件到 target/linux/mediatek/dts/ 目录
-        DTS_FILE="$GITHUB_WORKSPACE/scripts/Redmi_AX6000/mt7986a-xiaomi-redmi-router-ax6000-110m.dts"
+        # 复制本地仓库 /scripts/mt7986a-xiaomi-redmi-router-ax6000-110m.dts 文件到 target/linux/mediatek/dts/ 目录
+        DTS_FILE="$GITHUB_WORKSPACE/scripts/mt7986a-xiaomi-redmi-router-ax6000-110m.dts"
         TARGET_DTS_DIR="$OPENWRT_PATH/target/linux/mediatek/dts"
         if [ -f "$DTS_FILE" ]; then
           mkdir -p "$TARGET_DTS_DIR"
@@ -105,12 +105,11 @@ jobs:
         ./scripts/feeds update -a   
         ./scripts/feeds install -a
         ./scripts/feeds install -a
-
+        
     - name: Load Custom Configuration(加载自定义配置)
       run: |
         # 1. 移动自定义 files 目录到源码目录
-        FILES_PATH=$(find "$GITHUB_WORKSPACE" -maxdepth 3 -type d -name "files" | head -n 1)
-        [ -n "$FILES_PATH" ] && mv "$FILES_PATH" "$OPENWRT_PATH/files"
+        [ -e "$GITHUB_WORKSPACE/files" ] && mv "$GITHUB_WORKSPACE/files" "$OPENWRT_PATH/files"
 
         # 2. 读取源码目录内的基础配置并覆写到 .config
         if [ -f "$OPENWRT_PATH/$CONFIG_BASE" ]; then
@@ -120,39 +119,25 @@ jobs:
           echo "Warning: Base config file $OPENWRT_PATH/$CONFIG_BASE not found!"
         fi
         
-        # 3. 追加本地仓库的自定义配置文件到 .config
-        CUSTOM_FILE=$(find "$GITHUB_WORKSPACE" -maxdepth 4 -path "*/${{ env.CONFIG_CUSTOM }}" | head -n 1)
-
-        if [ -n "$CUSTOM_FILE" ] && [ -f "$CUSTOM_FILE" ]; then
+        # 3. 追加本地仓库的 CUSTOMIZE_AX6000.txt 到 .config
+        CUSTOM_FILE="$GITHUB_WORKSPACE/${{ env.CONFIG_CUSTOM }}"
+        if [ -f "$CUSTOM_FILE" ]; then
           cat "$CUSTOM_FILE" >> "$OPENWRT_PATH/.config"
-          echo "Successfully appended custom config from: $CUSTOM_FILE"
+          echo "Successfully appended custom config."
         else
-          echo "Warning: Custom config file for ${{ env.CONFIG_CUSTOM }} not found!"
+          echo "Warning: Custom config file $CUSTOM_FILE not found!"
         fi
         
-        # 4. 动态查找并执行本地仓库中的 DIY 脚本
+        # 4. 执行本地仓库中的 DIY 脚本
         cd "$OPENWRT_PATH"
-        
-        if [ -n "$DIY_SCRIPT" ]; then
-          SCRIPT_PATH=$(find "$GITHUB_WORKSPACE" -maxdepth 4 -path "*/$DIY_SCRIPT" | head -n 1)
-          if [ -n "$SCRIPT_PATH" ] && [ -f "$SCRIPT_PATH" ]; then
-            echo "Executing DIY Script 1: $SCRIPT_PATH"
-            chmod +x "$SCRIPT_PATH"
-            "$SCRIPT_PATH"
-          else
-            echo "Warning: DIY Script 1 ($DIY_SCRIPT) not found!"
-          fi
+        if [ -n "$DIY_SCRIPT" ] && [ -f "$GITHUB_WORKSPACE/$DIY_SCRIPT" ]; then
+          chmod +x "$GITHUB_WORKSPACE/$DIY_SCRIPT"
+          "$GITHUB_WORKSPACE/$DIY_SCRIPT"
         fi
 
-        if [ -n "$DIY_SCRIPT_2" ]; then
-          SCRIPT_PATH_2=$(find "$GITHUB_WORKSPACE" -maxdepth 4 -path "*/$DIY_SCRIPT_2" | head -n 1)
-          if [ -n "$SCRIPT_PATH_2" ] && [ -f "$SCRIPT_PATH_2" ]; then
-            echo "Executing DIY Script 2: $SCRIPT_PATH_2"
-            chmod +x "$SCRIPT_PATH_2"
-            "$SCRIPT_PATH_2"
-          else
-            echo "Warning: DIY Script 2 ($DIY_SCRIPT_2) not found!"
-          fi
+        if [ -n "$DIY_SCRIPT_2" ] && [ -f "$GITHUB_WORKSPACE/$DIY_SCRIPT_2" ]; then
+          chmod +x "$GITHUB_WORKSPACE/$DIY_SCRIPT_2"
+          "$GITHUB_WORKSPACE/$DIY_SCRIPT_2"
         fi
 
         # 5. 展开补全配置
