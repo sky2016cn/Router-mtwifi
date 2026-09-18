@@ -76,26 +76,63 @@ jobs:
        # =========== 在更新feeds 命令之前，先修改源码里的 filogic.mk 文件 和 添加 dts 文件 ===========
     - name: Patch AX6000 110M Partition(修改 110M 大分区文件)
       run: |
-        # 本地仓库 /scripts/xiaomi_redmi-router-ax6000-110m.txt 文件内的所有内容，追加 AX6000 110M 补丁内容到 /target/linux/mediatek/image/filogic.mk 末尾
-        DTS_MK_TXT="$GITHUB_WORKSPACE/scripts/xiaomi_redmi-router-ax6000-110m.txt"
-        TARGET_MK="$OPENWRT_PATH/target/linux/mediatek/image/filogic.mk"
-        if [ -f "$DTS_MK_TXT" ] && [ -f "$TARGET_MK" ]; then
-          cat "$DTS_MK_TXT" >> "$TARGET_MK"
-          echo "Successfully appended AX6000 110M profile to filogic.mk"
-        else
-          echo "Warning: $DTS_MK_TXT or $TARGET_MK does not exist!"
-        fi
-        
-        # 复制本地仓库 /scripts/mt7986a-xiaomi-redmi-router-ax6000-110m.dts 文件到 target/linux/mediatek/dts/ 目录
-        DTS_FILE="$GITHUB_WORKSPACE/scripts/mt7986a-xiaomi-redmi-router-ax6000-110m.dts"
-        TARGET_DTS_DIR="$OPENWRT_PATH/target/linux/mediatek/dts"
-        if [ -f "$DTS_FILE" ]; then
-          mkdir -p "$TARGET_DTS_DIR"
-          cp -f "$DTS_FILE" "$TARGET_DTS_DIR/"
-          echo "Successfully copied DTS file to $TARGET_DTS_DIR"
-        else
-          echo "Warning: DTS file $DTS_FILE not found!"
-        fi
+        cd "$OPENWRT_PATH"
+        # 1. 在 filogic.mk 末尾追加 Device（红米AX6000 设备定义）
+        cat << 'EOF' >> target/linux/mediatek/image/filogic.mk
+
+        define Device/xiaomi_redmi-router-ax6000-110m
+          $(Device/xiaomi_redmi-router-ax6000-stock)
+          DEVICE_VARIANT := (hanwckf 110M layout)
+          DEVICE_DTS := mt7986a-xiaomi-redmi-router-ax6000-110m
+          SUPPORTED_DEVICES := xiaomi,redmi-router-ax6000
+          IMAGE_SIZE := 112640k
+          KERNEL_IN_UBI := 1
+          IMAGES := factory.bin sysupgrade.bin
+          IMAGE/factory.bin := append-ubi | check-size $$$$(IMAGE_SIZE)
+          IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
+        endef
+        TARGET_DEVICES += xiaomi_redmi-router-ax6000-110m
+        EOF
+
+        # 2. 创建全新的 immortalwrt 110m大分区 DTS 设备树文件
+        cat << 'EOF' > target/linux/mediatek/dts/mt7986a-xiaomi-redmi-router-ax6000-110m.dts
+        // SPDX-License-Identifier: (GPL-2.0 OR MIT)
+
+        /dts-v1/;
+        #include "mt7986a-xiaomi-redmi-router-ax6000.dtsi"
+
+        / {
+        	model = "Xiaomi Redmi Router AX6000 (hanwckf 110M layout)";
+        	compatible = "xiaomi,redmi-router-ax6000", "mediatek,mt7986a";
+        };
+
+        &spi_nand_flash {
+        	mediatek,nmbm;
+        	mediatek,bmt-max-ratio = <1>;
+        	mediatek,bmt-max-reserved-blocks = <64>;
+        };
+
+        &partitions {
+        	partition@580000 {
+        		label = "crash";
+        		reg = <0x580000 0x40000>;
+        		read-only;
+        	};
+
+        	partition@5c0000 {
+        		label = "crash_log";
+        		reg = <0x5c0000 0x40000>;
+        		read-only;
+        	};
+
+        	partition@600000 {
+        		label = "ubi";
+        		reg = <0x600000 0x6e00000>;
+        	};
+        };
+        EOF
+
+        echo "✅ AX6000 110M 大分区适配代码补丁应用成功！"
         
     - name: Update Feeds(更新feeds)
       run: |
