@@ -105,11 +105,12 @@ jobs:
         ./scripts/feeds update -a   
         ./scripts/feeds install -a
         ./scripts/feeds install -a
-        
+
     - name: Load Custom Configuration(加载自定义配置)
       run: |
         # 1. 移动自定义 files 目录到源码目录
-        [ -e "$GITHUB_WORKSPACE/files" ] && mv "$GITHUB_WORKSPACE/files" "$OPENWRT_PATH/files"
+        FILES_PATH=$(find "$GITHUB_WORKSPACE" -maxdepth 3 -type d -name "files" | head -n 1)
+        [ -n "$FILES_PATH" ] && mv "$FILES_PATH" "$OPENWRT_PATH/files"
 
         # 2. 读取源码目录内的基础配置并覆写到 .config
         if [ -f "$OPENWRT_PATH/$CONFIG_BASE" ]; then
@@ -119,25 +120,39 @@ jobs:
           echo "Warning: Base config file $OPENWRT_PATH/$CONFIG_BASE not found!"
         fi
         
-        # 3. 追加本地仓库的 CUSTOMIZE_AX6000.txt 到 .config
-        CUSTOM_FILE="$GITHUB_WORKSPACE/${{ env.CONFIG_CUSTOM }}"
-        if [ -f "$CUSTOM_FILE" ]; then
+        # 3. 追加本地仓库的自定义配置文件到 .config
+        CUSTOM_FILE=$(find "$GITHUB_WORKSPACE" -maxdepth 4 -path "*/${{ env.CONFIG_CUSTOM }}" | head -n 1)
+
+        if [ -n "$CUSTOM_FILE" ] && [ -f "$CUSTOM_FILE" ]; then
           cat "$CUSTOM_FILE" >> "$OPENWRT_PATH/.config"
-          echo "Successfully appended custom config."
+          echo "Successfully appended custom config from: $CUSTOM_FILE"
         else
-          echo "Warning: Custom config file $CUSTOM_FILE not found!"
+          echo "Warning: Custom config file for ${{ env.CONFIG_CUSTOM }} not found!"
         fi
         
-        # 4. 执行本地仓库中的 DIY 脚本
+        # 4. 动态查找并执行本地仓库中的 DIY 脚本
         cd "$OPENWRT_PATH"
-        if [ -n "$DIY_SCRIPT" ] && [ -f "$GITHUB_WORKSPACE/$DIY_SCRIPT" ]; then
-          chmod +x "$GITHUB_WORKSPACE/$DIY_SCRIPT"
-          "$GITHUB_WORKSPACE/$DIY_SCRIPT"
+        
+        if [ -n "$DIY_SCRIPT" ]; then
+          SCRIPT_PATH=$(find "$GITHUB_WORKSPACE" -maxdepth 4 -path "*/$DIY_SCRIPT" | head -n 1)
+          if [ -n "$SCRIPT_PATH" ] && [ -f "$SCRIPT_PATH" ]; then
+            echo "Executing DIY Script 1: $SCRIPT_PATH"
+            chmod +x "$SCRIPT_PATH"
+            "$SCRIPT_PATH"
+          else
+            echo "Warning: DIY Script 1 ($DIY_SCRIPT) not found!"
+          fi
         fi
 
-        if [ -n "$DIY_SCRIPT_2" ] && [ -f "$GITHUB_WORKSPACE/$DIY_SCRIPT_2" ]; then
-          chmod +x "$GITHUB_WORKSPACE/$DIY_SCRIPT_2"
-          "$GITHUB_WORKSPACE/$DIY_SCRIPT_2"
+        if [ -n "$DIY_SCRIPT_2" ]; then
+          SCRIPT_PATH_2=$(find "$GITHUB_WORKSPACE" -maxdepth 4 -path "*/$DIY_SCRIPT_2" | head -n 1)
+          if [ -n "$SCRIPT_PATH_2" ] && [ -f "$SCRIPT_PATH_2" ]; then
+            echo "Executing DIY Script 2: $SCRIPT_PATH_2"
+            chmod +x "$SCRIPT_PATH_2"
+            "$SCRIPT_PATH_2"
+          else
+            echo "Warning: DIY Script 2 ($DIY_SCRIPT_2) not found!"
+          fi
         fi
 
         # 5. 展开补全配置
