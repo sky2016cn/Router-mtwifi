@@ -106,37 +106,52 @@ jobs:
 
     - name: 基础配置 mt7986-ax6000.config 复制到根目录并重命名 .config
       run: |
-        # 将配置文件从 defconfig 目录复制到根目录并重命名 .config
         cd "$OPENWRT_PATH"
-        cp -f defconfig/mt7986-ax6000.config .config
+        if [ -f "defconfig/mt7986-ax6000.config" ]; then
+          cp -f defconfig/mt7986-ax6000.config .config
+          echo "Successfully loaded base config from源码目录: defconfig/mt7986-ax6000.config"
+        else
+          echo "Error: defconfig/mt7986-ax6000.config not found in $OPENWRT_PATH" && exit 1
+        fi
 
     - name: Load Custom Configuration(加载自定义配置)
       run: |
-        # 1. 移动自定义 files 目录到源码目录
-        [ -e "$GITHUB_WORKSPACE/files" ] && mv "$GITHUB_WORKSPACE/files" "$OPENWRT_PATH/files"
-        
-        # 2. 追加 configs 目录下的 CUSTOMIZE_AX6000.txt 到 .config
-        CUSTOM_FILE="$GITHUB_WORKSPACE/configs/CUSTOMIZE_AX6000.txt"
-        if [ -f "$CUSTOM_FILE" ]; then
-          cat "$CUSTOM_FILE" >> "$OPENWRT_PATH/.config"
-          echo "Successfully appended custom config from $CUSTOM_FILE"
-        else
-          echo "Warning: Custom config file $CUSTOM_FILE not found!"
-        fi
-        
-        # 3. 执行本地仓库中的 DIY 脚本
         cd "$OPENWRT_PATH"
-        if [ -n "$DIY_SCRIPT" ] && [ -f "$GITHUB_WORKSPACE/$DIY_SCRIPT" ]; then
-          chmod +x "$GITHUB_WORKSPACE/$DIY_SCRIPT"
-          "$GITHUB_WORKSPACE/$DIY_SCRIPT"
+        # 自动查穿透寻找本地仓库里的 CUSTOMIZE_AX6000.txt，避开套层目录找不到的问题
+        CUSTOM_FILE=$(find "$GITHUB_WORKSPACE" -path "$OPENWRT_PATH" -prune -o -name "CUSTOMIZE_AX6000.txt" -print | head -n 1)
+        
+        if [ -n "$CUSTOM_FILE" ] && [ -f "$CUSTOM_FILE" ]; then
+          cat "$CUSTOM_FILE" >> .config
+          echo "Successfully appended custom config from: $CUSTOM_FILE"
+        else
+          echo "Error: CUSTOMIZE_AX6000.txt not found anywhere under $GITHUB_WORKSPACE!" && exit 1
         fi
 
-        if [ -n "$DIY_SCRIPT_2" ] && [ -f "$GITHUB_WORKSPACE/$DIY_SCRIPT_2" ]; then
-          chmod +x "$GITHUB_WORKSPACE/$DIY_SCRIPT_2"
-          "$GITHUB_WORKSPACE/$DIY_SCRIPT_2"
+    - name: Load Custom scripts (加载自定义DIY脚本)
+      run: |
+        cd "$OPENWRT_PATH"
+        
+        # 查找并执行 DIY 脚本 1
+        if [ -n "$DIY_SCRIPT" ]; then
+          SCRIPT_PATH_1=$(find "$GITHUB_WORKSPACE" -path "$OPENWRT_PATH" -prune -o -name "$(basename "$DIY_SCRIPT")" -print | head -n 1)
+          if [ -n "$SCRIPT_PATH_1" ] && [ -f "$SCRIPT_PATH_1" ]; then
+            echo "Executing DIY Script 1: $SCRIPT_PATH_1"
+            chmod +x "$SCRIPT_PATH_1"
+            "$SCRIPT_PATH_1"
+          fi
         fi
 
-        # 4. 展开补全配置
+        # 查找并执行 DIY 脚本 2
+        if [ -n "$DIY_SCRIPT_2" ]; then
+          SCRIPT_PATH_2=$(find "$GITHUB_WORKSPACE" -path "$OPENWRT_PATH" -prune -o -name "$(basename "$DIY_SCRIPT_2")" -print | head -n 1)
+          if [ -n "$SCRIPT_PATH_2" ] && [ -f "$SCRIPT_PATH_2" ]; then
+            echo "Executing DIY Script 2: $SCRIPT_PATH_2"
+            chmod +x "$SCRIPT_PATH_2"
+            "$SCRIPT_PATH_2"
+          fi
+        fi
+
+        # 展开补全配置（依赖警告忽略即可）
         make defconfig
         
     - name: Generate Variables(生成变量)
