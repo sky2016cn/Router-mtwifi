@@ -19,8 +19,6 @@ permissions: write-all
 env:
   REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6.git
   REPO_BRANCH: openwrt-24.10-6.6
-  CONFIG_BASE: defconfig/mt7986-ax6000.config
-  CONFIG_CUSTOM: configs/CUSTOMIZE_AX6000.txt
   DIY_SCRIPT: scripts/diy-script.sh
   DIY_SCRIPT_2: scripts/diy-6.6.sh
   CACHE_TOOLCHAIN: true
@@ -105,30 +103,28 @@ jobs:
         ./scripts/feeds update -a   
         ./scripts/feeds install -a
         ./scripts/feeds install -a
-        
+
+    - name: 基础配置 mt7986-ax6000.config 复制到根目录并重命名 .config
+      run: |
+        # 将配置文件从 defconfig 目录复制到根目录并重命名 .config
+        cd "$OPENWRT_PATH"
+        cp -f defconfig/mt7986-ax6000.config .config
+
     - name: Load Custom Configuration(加载自定义配置)
       run: |
         # 1. 移动自定义 files 目录到源码目录
         [ -e "$GITHUB_WORKSPACE/files" ] && mv "$GITHUB_WORKSPACE/files" "$OPENWRT_PATH/files"
-
-        # 2. 读取源码目录内的基础配置并覆写到 .config
-        if [ -f "$OPENWRT_PATH/$CONFIG_BASE" ]; then
-          cat "$OPENWRT_PATH/$CONFIG_BASE" > "$OPENWRT_PATH/.config"
-          echo "Successfully loaded base config."
-        else
-          echo "Warning: Base config file $OPENWRT_PATH/$CONFIG_BASE not found!"
-        fi
         
-        # 3. 追加本地仓库的 CUSTOMIZE_AX6000.txt 到 .config
-        CUSTOM_FILE="$GITHUB_WORKSPACE/${{ env.CONFIG_CUSTOM }}"
+        # 2. 追加 configs 目录下的 CUSTOMIZE_AX6000.txt 到 .config
+        CUSTOM_FILE="$GITHUB_WORKSPACE/configs/CUSTOMIZE_AX6000.txt"
         if [ -f "$CUSTOM_FILE" ]; then
           cat "$CUSTOM_FILE" >> "$OPENWRT_PATH/.config"
-          echo "Successfully appended custom config."
+          echo "Successfully appended custom config from $CUSTOM_FILE"
         else
           echo "Warning: Custom config file $CUSTOM_FILE not found!"
         fi
         
-        # 4. 执行本地仓库中的 DIY 脚本
+        # 3. 执行本地仓库中的 DIY 脚本
         cd "$OPENWRT_PATH"
         if [ -n "$DIY_SCRIPT" ] && [ -f "$GITHUB_WORKSPACE/$DIY_SCRIPT" ]; then
           chmod +x "$GITHUB_WORKSPACE/$DIY_SCRIPT"
@@ -140,7 +136,7 @@ jobs:
           "$GITHUB_WORKSPACE/$DIY_SCRIPT_2"
         fi
 
-        # 5. 展开补全配置
+        # 4. 展开补全配置
         make defconfig
         
     - name: Generate Variables(生成变量)
@@ -173,7 +169,7 @@ jobs:
 
     - name: Download DL Package(下载DL软件包)
       run: |
-        cd $OPENWRT_PATH
+        cd "$OPENWRT_PATH"
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
@@ -181,7 +177,7 @@ jobs:
     - name: Compile Firmware(开始编译固件)
       id: compile
       run: |
-        cd $OPENWRT_PATH
+        cd "$OPENWRT_PATH"
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j1 V=s
         echo "status=success" >> $GITHUB_OUTPUT
