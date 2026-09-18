@@ -19,6 +19,7 @@ permissions: write-all
 env:
   REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6.git
   REPO_BRANCH: openwrt-24.10-6.6
+  CONFIG_CUSTOM: configs/CUSTOMIZE_AX6000.txt
   DIY_SCRIPT: scripts/diy-script.sh
   DIY_SCRIPT_2: scripts/diy-6.6-redmi_ax6000.sh
   CACHE_TOOLCHAIN: true
@@ -123,16 +124,8 @@ jobs:
           echo "Successfully loaded custom files."
         fi
 
-        # 2. 覆盖基础配置到 .config
-        if [ -f "$OPENWRT_PATH/$CONFIG_BASE" ]; then
-          cat "$OPENWRT_PATH/$CONFIG_BASE" > "$OPENWRT_PATH/.config"
-          echo "Successfully loaded base config."
-        else
-          echo "Error: Base config file $OPENWRT_PATH/$CONFIG_BASE not found!" && exit 1
-        fi
-
-        # 3. 追加 configs/CUSTOMIZE_AX6000.txt 到 .config
-        CUSTOM_FILE="$GITHUB_WORKSPACE/${{ env.CONFIG_CUSTOM }}"
+        # 2. 追加 configs/CUSTOMIZE_AX6000.txt 到 .config
+        CUSTOM_FILE="$GITHUB_WORKSPACE/${CONFIG_CUSTOM:-configs/CUSTOMIZE_AX6000.txt}"
         if [ -f "$CUSTOM_FILE" ]; then
           cat "$CUSTOM_FILE" >> "$OPENWRT_PATH/.config"
           echo "Successfully appended custom config from: $CUSTOM_FILE"
@@ -140,7 +133,7 @@ jobs:
           echo "Error: Custom config file $CUSTOM_FILE not found!" && exit 1
         fi
 
-        # 4. 执行 scripts/ 目录下的 DIY 脚本
+        # 3. 执行 scripts/ 目录下的 DIY 脚本
         cd "$OPENWRT_PATH"
 
         if [ -n "$DIY_SCRIPT" ] && [ -f "$GITHUB_WORKSPACE/$DIY_SCRIPT" ]; then
@@ -155,7 +148,7 @@ jobs:
           "$GITHUB_WORKSPACE/$DIY_SCRIPT_2"
         fi
 
-        # 5. 补全展开配置
+        # 4. 补全展开配置
         make defconfig
 
     - name: Generate Variables(生成变量)
