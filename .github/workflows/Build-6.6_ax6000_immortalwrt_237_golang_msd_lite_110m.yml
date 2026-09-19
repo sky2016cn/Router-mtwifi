@@ -120,12 +120,12 @@ jobs:
         # 1. 如果根目录下有自定义 files 文件夹，复制到源码目录
         if [ -d "$GITHUB_WORKSPACE/files" ]; then
           mkdir -p "$OPENWRT_PATH/files"
-          cp -rf "$GITHUB_WORKSPACE/files"/* "$OPENWRT_PATH/files/"
+          cp -rf "$GITHUB_WORKSPACE/files"/. "$OPENWRT_PATH/files/"
           echo "Successfully loaded custom files."
         fi
 
-        # 2. 追加 configs/CUSTOMIZE_AX6000.txt 到 .config
-        CUSTOM_FILE="$GITHUB_WORKSPACE/${CONFIG_CUSTOM:-configs/CUSTOMIZE_AX6000.txt}"
+        # 2. 追加 /scripts/Redmi-AX6000/CUSTOMIZE-AX6000.txt 到 .config
+        CUSTOM_FILE="$GITHUB_WORKSPACE/${CONFIG_CUSTOM:-scripts/Redmi-AX6000/CUSTOMIZE-AX6000.txt}"
         if [ -f "$CUSTOM_FILE" ]; then
           cat "$CUSTOM_FILE" >> "$OPENWRT_PATH/.config"
           echo "Successfully appended custom config from: $CUSTOM_FILE"
@@ -210,12 +210,12 @@ jobs:
     - name: Organize Files(整理文件)
       if: steps.compile.outputs.status == 'success'
       run: |
-        cd $OPENWRT_PATH/bin/targets/*/*
+        cd "$OPENWRT_PATH"/bin/targets/*/*
         cat sha256sums
         echo "VERSION_KERNEL=$(find -type f -name "*.manifest" -exec grep -oP '^kernel - \K.*?(?=~|-\d+-)' {} \;)" >> $GITHUB_ENV
-        cp $OPENWRT_PATH/.config build.config
+        cp "$OPENWRT_PATH"/.config build.config
         mkdir -p packages
-        [ -d $OPENWRT_PATH/bin/packages ] && find $OPENWRT_PATH/bin/packages -type f -name "*.ipk" -exec cp -f {} packages \;
+        [ -d "$OPENWRT_PATH"/bin/packages ] && find "$OPENWRT_PATH"/bin/packages -type f -name "*.ipk" -exec cp -f {} packages \;
         [ -d packages ] && tar -zcf Packages.tar.gz packages || true
         rm -rf feeds.buildinfo version.buildinfo
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
