@@ -216,7 +216,7 @@ jobs:
         cp "$OPENWRT_PATH"/.config build.config
         mkdir -p packages
         [ -d "$OPENWRT_PATH"/bin/packages ] && find "$OPENWRT_PATH"/bin/packages -type f -name "*.ipk" -exec cp -f {} packages \;
-        [ -d packages ] && tar -zcf Packages.tar.gz packages || true
+        [ -d packages ] && tar -zcf packages.tar.gz packages || true
         rm -rf feeds.buildinfo version.buildinfo
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
